@@ -17,6 +17,7 @@ loglevel 3
     export ANDROID_DATA /data
     export DOWNLOAD_CACHE /cache/download
     export EXTERNAL_STORAGE /mnt/sdcard
+    export PHONE_STORAGE /mnt/emmc
     export ASEC_MOUNTPOINT /mnt/asec
     export LOOP_MOUNTPOINT /mnt/obb
     export SD_EXT_DIRECTORY /sd-ext
@@ -42,6 +43,7 @@ loglevel 3
 
 # Backwards Compat - XXX: Going away in G*
     symlink /mnt/sdcard /sdcard
+    symlink /mnt/emmc /emmc
 
     mkdir /system
     mkdir /data 0771 system system
@@ -113,7 +115,7 @@ loglevel 3
 on fs
 # mount mtd partitions
     # Mount /system rw first to give the filesystem a chance to save a checkpoint
-    mount ext4 /dev/block/mmcblk0p9 /system wait rw
+    mount ext4 /dev/block/mmcblk0p9 /system wait ro
     mount ext4 /dev/block/mmcblk0p7 /cache nosuid nodev noatime wait
     exec check_filesystem /dev/block/mmcblk0p10 ext4
     mount ext4 /dev/block/mmcblk0p10 /data nosuid nodev noatime wait crypt discard,noauto_da_alloc
@@ -384,6 +386,15 @@ on boot
     # Tweak background writeout
     write /proc/sys/vm/dirty_expire_centisecs 200
     write /proc/sys/vm/dirty_background_ratio  5
+
+# mDNIe
+    chown radio system /sys/devices/virtual/mdnieset_outdoor/switch_mdnieset_outdoor/mdnieset_outdoor_file_cmd
+    chown radio system /sys/devices/virtual/mdnieset_ui/switch_mdnieset_ui/mdnieset_init_file_cmd
+    chown radio system /sys/devices/virtual/mdnieset_ui/switch_mdnieset_ui/mdnieset_user_select_file_cmd
+    chown radio system /sys/devices/virtual/mdnieset_ui/switch_mdnieset_ui/mdnieset_ui_file_cmd
+    write /sys/class/mdnieset_ui/switch_mdnieset_ui/mdnieset_init_file_cmd  0
+    write /sys/class/mdnieset_ui/switch_mdnieset_ui/mdnieset_ui_file_cmd 0
+    write /sys/class/mdnieset_ui/switch_mdnieset_ui/mdnieset_user_select_file_cmd 1
 
 # permissions for NFC
     setprop ro.nfc.port "I2C"
@@ -659,7 +670,7 @@ service dbus /system/bin/dbus-daemon --system --nofork
     group bluetooth net_bt_admin
 
 #service hciattach /system/bin/hciattach /dev/s3c2410_serial0 any
-service hciattach /system/bin/brcm_patchram_plus --enable_hci --baudrate 3000000 --patchram /system/bin/BCM4330B1_002.001.003.0221.0265.hcd /dev/s3c2410_serial0
+service hciattach /system/bin/logwrapper /system/bin/brcm_patchram_plus -d --enable_lpm --enable_hci --baudrate 3000000 --patchram /system/bin/BCM4330B1_002.001.003.0221.0265.hcd /dev/s3c2410_serial0
     user bluetooth
     group bluetooth net_bt_admin
     disabled
